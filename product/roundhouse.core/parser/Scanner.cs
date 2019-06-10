@@ -66,7 +66,7 @@ namespace roundhouse.parser
         /// Creates a new scanner and sets its SQL script
         /// </summary>
         /// <param name="ansiQuotes">Flag indicating if ANSI quotes should be honored</param>
-        /// <param name="script">the MySQL script to parse</script>
+        /// <param name="script">the SQL script to parse</script>
         public Scanner(bool ansiQuotes, string script)
         {
             this.ansiQuotes = ansiQuotes;
