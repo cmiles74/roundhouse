@@ -1,12 +1,12 @@
-namespace roundhouse.databases.mysql.parser
+namespace roundhouse.parser
 {
     /// <summary>
-    /// Models a Token of a MySQL script
+    /// Models a Token of a SQL script
     /// </summary>
     public class Token
     {
         /// <summary>
-        /// Enumeration of MySQL token types
+        /// Enumeration of SQL token types
         /// </summary>
         public enum Type { 
             DelimiterDeclare,  // statement delimiter declaration

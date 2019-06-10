@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using NUnit.Framework;
-using roundhouse.databases.mysql.parser;
+using roundhouse.parser;
 using roundhouse.sqlsplitters;
 
 namespace roundhouse.tests.sqlsplitters

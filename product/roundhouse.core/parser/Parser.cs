@@ -1,19 +1,18 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using roundhouse.databases.mysql.parser;
 
-namespace roundhouse.databases.mysql.parser
+namespace roundhouse.parser
 {
 
     /// <summary>
-    /// Provides a parser that will parse statements out of a string of MySQL SQL.
+    /// Provides a parser that will parse statements out of a string of SQL.
     /// </summary>
     public class Parser
     {
 
         /// <summary>
-        /// MySQL script to parse
+        /// SQL script to parse
         /// </summary>
         private readonly string script;
 
@@ -38,7 +37,7 @@ namespace roundhouse.databases.mysql.parser
         private readonly List<ParsedStatement> statements = new List<ParsedStatement>();
 
         /// <summary>
-        /// Flag indicating ANSI style quotes will be honored by MySQL
+        /// Flag indicating ANSI style quotes will be honored
         /// </summary>
         private bool ansiQuotes;
 
@@ -53,10 +52,20 @@ namespace roundhouse.databases.mysql.parser
         private int current;
 
         /// <summary>
-        /// Creates a new parser and sets its MySQL script.
+        /// Creates a new parser and sets its SQL script. ANSI quotes will be
+        ///  honored.
         /// </summary>
-        /// <param name="script">the MySQL script to parse</param>
-        public Parser(string script)
+        /// <param name="script">the SQL script to parse</param>
+        public Parser(string script) : this(true, script) {
+
+        }
+
+        /// <summary>
+        /// Creates a new parser and sets its SQL script.
+        /// </summary>
+        /// <param name="ansiQuotes">Flag indicating if ANSI quotes should be honored</param>
+        /// <param name="script">the SQL script to parse</param>
+        public Parser(bool ansiQuotes, string script)
         {
             this.script = script;
             this.scanner = new Scanner(script);
@@ -80,7 +89,7 @@ namespace roundhouse.databases.mysql.parser
         }
 
         /// <summary>
-        /// Parses the MySQL script and returns a List of ParsedStatement
+        /// Parses the SQL script and returns a List of ParsedStatement
         /// instances.
         /// </summary>
         /// <returns>List of ParsedStatement</returns>

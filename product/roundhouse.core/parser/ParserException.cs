@@ -1,4 +1,4 @@
-namespace roundhouse.databases.mysql.parser
+namespace roundhouse.parser
 {
     /// <summary>
     /// Exception for all parsing and scanning related exceptions.

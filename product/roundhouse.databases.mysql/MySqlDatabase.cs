@@ -13,7 +13,7 @@ namespace roundhouse.databases.mysql
     using System.IO;
     using System.Globalization;
     using System.Text;
-    using roundhouse.databases.mysql.parser;
+    using roundhouse.parser;
 
     public class MySqlDatabase : AdoNetDatabase
     {
@@ -165,12 +165,12 @@ namespace roundhouse.databases.mysql
                     }
                 }
 
-                // create a new parser to parse statements -- http://bugs.mysql.com/bug.php?id=46429
-                Parser parser = new Parser(sql_to_run);
-
-                // set ANSI quote mode, may effect delimiter parsing
-                parser.AnsiQuotes = 
+                // fetch the server's ANSI quote mode
+                bool ansiQuotes = 
                     sql_mode.IndexOf("ANSI_QUOTES", 0, sql_mode.Length, StringComparison.InvariantCulture) == 0 ? false : true;
+
+                // create a new parser to parse statements -- http://bugs.mysql.com/bug.php?id=46429
+                Parser parser = new Parser(ansiQuotes, sql_to_run);
 
                 // parse out and process our SQL statements
                 List<ParsedStatement> statements = parser.Parse();

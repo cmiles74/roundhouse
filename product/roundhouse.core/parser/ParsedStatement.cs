@@ -1,12 +1,12 @@
-namespace roundhouse.databases.mysql.parser
+namespace roundhouse.parser
 {
     /// <summary>
-    /// Models a statemetn of a MySQL script
+    /// Models a statement of a SQL script
     /// </summary>
     public class ParsedStatement
     {
         /// <summary>
-        /// Enumeration of MySQL statement types
+        /// Enumeration of SQL statement types
         /// </summary>
         public enum Type { 
             Sql,       // SQL statement
@@ -29,7 +29,7 @@ namespace roundhouse.databases.mysql.parser
         private readonly string delimiter;
 
         /// <summary>
-        /// Creates a new statement of type Sql and sets its fields
+        /// Creates a new statement of type SQL and sets its fields
         /// </summary>
         /// <param name="value">Value of the statement</param>
         /// <param name="delimiter">Delimiter for the statement</param>

@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 
-namespace roundhouse.databases.mysql.parser
+namespace roundhouse.parser
 {
     /// <summary>
-    /// Provides a scanner that will break a string of MySQL into tokens.
+    /// Provides a scanner that will break a string of SQL into tokens.
     /// </summary>
     class Scanner
     {
@@ -54,11 +54,22 @@ namespace roundhouse.databases.mysql.parser
         private readonly List<Token> tokens = new List<Token>();
 
         /// <summary>
-        /// Creates a new scanner and sets its MySQL script
+        /// Creates a new scanner and sets its SQL script, ANSI quotes will be 
+        /// honored.
         /// </summary>
         /// <param name="script">the MySQL script to parse</script>
-        public Scanner(string script)
+        public Scanner(string script) : this(true, script) {
+
+        }
+
+        /// <summary>
+        /// Creates a new scanner and sets its SQL script
+        /// </summary>
+        /// <param name="ansiQuotes">Flag indicating if ANSI quotes should be honored</param>
+        /// <param name="script">the MySQL script to parse</script>
+        public Scanner(bool ansiQuotes, string script)
         {
+            this.ansiQuotes = ansiQuotes;
             this.script = script;
         }
 
@@ -87,7 +98,7 @@ namespace roundhouse.databases.mysql.parser
         }
 
         /// <summary>
-        /// Scans the MySQL script and returns a List of Token instances
+        /// Scans the SQL script and returns a List of Token instances
         /// </summary>
         /// <returns>List of Token</return>
         public List<Token> Scan() 
