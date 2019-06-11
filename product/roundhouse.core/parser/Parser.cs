@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using roundhouse.parser.rules;
 
 namespace roundhouse.parser
 {
@@ -37,9 +38,9 @@ namespace roundhouse.parser
         private readonly List<ParsedStatement> statements = new List<ParsedStatement>();
 
         /// <summary>
-        /// Flag indicating ANSI style quotes will be honored
+        /// Rules to use when scaning and parsing SQL for statements
         /// </summary>
-        private bool ansiQuotes;
+        private readonly ParserRules parserRules;
 
         /// <summary>
         /// Start position in the token list for the current statement
@@ -52,40 +53,24 @@ namespace roundhouse.parser
         private int current;
 
         /// <summary>
-        /// Creates a new parser and sets its SQL script. ANSI quotes will be
-        ///  honored.
+        /// Creates a new parser that will use the "generic" set of scanning 
+        // and parsing and the SQL script
         /// </summary>
         /// <param name="script">the SQL script to parse</param>
-        public Parser(string script) : this(true, script) {
+        public Parser(string script) : this(new GenericRules(), script) {
 
         }
 
         /// <summary>
         /// Creates a new parser and sets its SQL script.
         /// </summary>
-        /// <param name="ansiQuotes">Flag indicating if ANSI quotes should be honored</param>
+        /// <param name="parserRules">Parser rule object to use when scanning and parsing</param>
         /// <param name="script">the SQL script to parse</param>
-        public Parser(bool ansiQuotes, string script)
+        public Parser(ParserRules parserRules, string script)
         {
+            this.parserRules = parserRules;
             this.script = script;
-            this.scanner = new Scanner(script);
-            this.scanner.AnsiQuotes = ansiQuotes;       
-        }
-
-        public bool AnsiQuotes
-        {
-            get
-            {
-                return this.ansiQuotes;
-            }
-            set 
-            {
-                this.ansiQuotes = value;
-
-                if (scanner != null) {
-                    scanner.AnsiQuotes = value;
-                }
-            }
+            this.scanner = new Scanner(parserRules, script);
         }
 
         /// <summary>

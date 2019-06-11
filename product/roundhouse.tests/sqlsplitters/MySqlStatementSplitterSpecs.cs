@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using NUnit.Framework;
 using roundhouse.parser;
+using roundhouse.parser.rules;
 using roundhouse.sqlsplitters;
 
 namespace roundhouse.tests.sqlsplitters
@@ -29,7 +30,7 @@ namespace roundhouse.tests.sqlsplitters
             {
                 string script = "select * from test1;\nselect * from test2;\n";
 
-                Parser parser = new Parser(script);
+                Parser parser = new Parser(new MySqlRules(), script);
                 List<ParsedStatement> statements = parser.Parse();
                 WriteStatements(statements);
 
@@ -39,11 +40,11 @@ namespace roundhouse.tests.sqlsplitters
             }
 
             [Observation]
-            public void should_retain_comments()
+            public void should_honor_multiline_comments()
             {
                 string script = "/*\n *\n * Test Statement\n *\n */\nselect * from test1;\nselect * from test2;\n";
 
-                Parser parser = new Parser(script);
+                Parser parser = new Parser(new MySqlRules(), script);
                 List<ParsedStatement> statements = parser.Parse();
                 WriteStatements(statements);
 
@@ -52,11 +53,27 @@ namespace roundhouse.tests.sqlsplitters
             }
 
             [Observation]
+            public void should_honor_hashmark_comments()
+            {
+                string script = "#\n# Test Statement\nselect * from test1;\nselect * from test2;";
+
+                Parser parser = new Parser(new MySqlRules(), script);
+                List<ParsedStatement> statements = parser.Parse();
+                WriteStatements(statements);
+
+                Assert.AreEqual(
+                    "#" + Environment.NewLine + 
+                    "# Test Statement" + Environment.NewLine +
+                    "select * from test1" + Environment.NewLine, statements[0].Value);
+                Assert.AreEqual(2, statements.Count);
+            }
+
+            [Observation]
             public void should_honor_single_character_delimiter()
             {
                 string script = "delimiter $\nselect * from test1$\nselect * from test2$\n";
 
-                Parser parser = new Parser(script);
+                Parser parser = new Parser(new MySqlRules(), script);
                 List<ParsedStatement> statements = parser.Parse();
                 WriteStatements(statements);
 
@@ -70,7 +87,7 @@ namespace roundhouse.tests.sqlsplitters
             {
                 string script = "delimiter Z\nselect * from test1Z\nselect * from test2Z\n";
 
-                Parser parser = new Parser(script);
+                Parser parser = new Parser(new MySqlRules(), script);
                 List<ParsedStatement> statements = parser.Parse();
                 WriteStatements(statements);
 
@@ -84,7 +101,7 @@ namespace roundhouse.tests.sqlsplitters
             {
                 string script = "delimiter $$\nselect * from test1$$\nselect * from test2$$\n";
 
-                Parser parser = new Parser(script);
+                Parser parser = new Parser(new MySqlRules(), script);
                 List<ParsedStatement> statements = parser.Parse();
                 WriteStatements(statements);
 
@@ -98,7 +115,7 @@ namespace roundhouse.tests.sqlsplitters
             {
                 string script = "delimiter ZZ\nselect * from test1ZZ\nselect * from test2ZZ\n";
 
-                Parser parser = new Parser(script);
+                Parser parser = new Parser(new MySqlRules(), script);
                 List<ParsedStatement> statements = parser.Parse();
                 WriteStatements(statements);
 
@@ -112,7 +129,7 @@ namespace roundhouse.tests.sqlsplitters
             {
                 string script = "delimiter E4TMY$H0RT$\nselect * from test1E4TMY$H0RT$\nselect * from test2E4TMY$H0RT$\n";
 
-                Parser parser = new Parser(script);
+                Parser parser = new Parser(new MySqlRules(), script);
                 List<ParsedStatement> statements = parser.Parse();
                 WriteStatements(statements);
 
@@ -126,7 +143,7 @@ namespace roundhouse.tests.sqlsplitters
             {
                 string script = "delimiter $$\nselect * from test1$$\nselect * from test2$$select * from test3$$\ndelimiter ;";
 
-                Parser parser = new Parser(script);
+                Parser parser = new Parser(new MySqlRules(), script);
                 List<ParsedStatement> statements = parser.Parse();
                 WriteStatements(statements);
 
@@ -140,7 +157,7 @@ namespace roundhouse.tests.sqlsplitters
             {
                 string script = "set ps = 'select * from test;';\nprepare ps;\nexecute ps;";
 
-                Parser parser = new Parser(script);
+                Parser parser = new Parser(new MySqlRules(), script);
                 List<ParsedStatement> statements = parser.Parse();
                 WriteStatements(statements);
 
@@ -149,10 +166,38 @@ namespace roundhouse.tests.sqlsplitters
                 Assert.AreEqual(3, statements.Count);
             }
 
+            [Observation]
+            public void should_honor_double_quoted_semicolon()
+            {
+                string script = "set ps = \"select * from test;\";\nprepare ps;\nexecute ps;";
+
+                Parser parser = new Parser(new MySqlRules(), script);
+                List<ParsedStatement> statements = parser.Parse();
+                WriteStatements(statements);
+
+                WriteOutput("Statements parsed: " + statements.Count);
+                Assert.AreEqual("set ps = \"select * from test;\"" + Environment.NewLine, statements[0].Value);
+                Assert.AreEqual(3, statements.Count);
+            }
+
+            [Observation]
+            public void should_honor_backtick_quoted_semicolon()
+            {
+                string script = "set ps = `select * from test;`;\nprepare ps;\nexecute ps;";
+
+                Parser parser = new Parser(new MySqlRules(), script);
+                List<ParsedStatement> statements = parser.Parse();
+                WriteStatements(statements);
+
+                WriteOutput("Statements parsed: " + statements.Count);
+                Assert.AreEqual("set ps = `select * from test;`" + Environment.NewLine, statements[0].Value);
+                Assert.AreEqual(3, statements.Count);
+            }
+
             private void WriteStatements(List<ParsedStatement> statements) {
                 int index = 0;
                 foreach (ParsedStatement statement in statements) {
-                    WriteOutput(index + ":");
+                    WriteOutput(index + ", " + statement.StatementType + ":");
                     WriteStatement(statement);
                     index++;
                 }

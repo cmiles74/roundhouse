@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using roundhouse.parser.rules;
 
 namespace roundhouse.parser
 {
@@ -29,9 +30,9 @@ namespace roundhouse.parser
         private string delimiter = DEFAULT_DELIMETER;
 
         /// <summary>
-        /// Flag indicating ANSI style quotes will be honored by MySQL
+        /// Rules to use when scaning and parsing SQL for statements
         /// </summary>
-        private bool ansiQuotes;
+        private readonly ParserRules parserRules;
 
         /// <summary>
         /// Start position in the script for the current token
@@ -54,22 +55,22 @@ namespace roundhouse.parser
         private readonly List<Token> tokens = new List<Token>();
 
         /// <summary>
-        /// Creates a new scanner and sets its SQL script, ANSI quotes will be 
-        /// honored.
+        /// Creates a new scanner that will use the "generic" set of scanning 
+        // and parsing and the SQL script
         /// </summary>
         /// <param name="script">the MySQL script to parse</script>
-        public Scanner(string script) : this(true, script) {
+        public Scanner(string script) : this(new GenericRules(), script) {
 
         }
 
         /// <summary>
-        /// Creates a new scanner and sets its SQL script
+        /// Creates a new scanner and sets its scnnaing rules and SQL script
         /// </summary>
-        /// <param name="ansiQuotes">Flag indicating if ANSI quotes should be honored</param>
+        /// <param name="parserRules">Parser rule object to use when scanning and parsing</param>
         /// <param name="script">the SQL script to parse</script>
-        public Scanner(bool ansiQuotes, string script)
+        public Scanner(ParserRules parserRules, string script)
         {
-            this.ansiQuotes = ansiQuotes;
+            this.parserRules = parserRules;
             this.script = script;
         }
 
@@ -82,18 +83,6 @@ namespace roundhouse.parser
             set 
             {
                 this.delimiter = value;
-            }
-        }
-
-        public bool AnsiQuotes
-        {
-            get
-            {
-                return this.ansiQuotes;
-            }
-            set 
-            {
-                this.ansiQuotes = value;
             }
         }
 
@@ -158,24 +147,29 @@ namespace roundhouse.parser
                     break;
 
                 case '"':
-                    if (ansiQuotes) {
-                        AnsiQuoted();
-                        break;
-                    } else {
-                        goto case '\'';
-                    }
+                    DoubleQuoted();
+                    break;
 
                 case '\'':
                     SingleQuoted();
                     break;
 
                 case '`':
-                    Quoted();
-                    break;
+                    if (parserRules.BacktickAsQuote) {
+                        BacktickQuoted();
+                        break;
+                    } else {
+                        goto case '#';
+                    }
 
                 case '#':
-                    Comment();
-                    break;
+                    if (parserRules.HashmarkAsComment) {
+                        //Advance();
+                        Comment();
+                        break;
+                    } else {
+                        goto case '-';
+                    }
                 
                 case '-':
                     if (Match('-')) {
@@ -206,7 +200,7 @@ namespace roundhouse.parser
         {
             while (!(Match('*') && Peek() == '/')) {
                 
-                if (Peek() == '\n') {
+                if (PeekEndOfLine()) {
                     line++;
                 }
 
@@ -226,7 +220,7 @@ namespace roundhouse.parser
 
         private void Comment()
         {
-            while (!(Peek() == '\r' && PeekPeek() == '\n') && Peek() != '\n' && !IsAtEnd()) {
+            while (!PeekEndOfLine() && !IsAtEnd()) {
                 Advance();
             }
 
@@ -261,18 +255,18 @@ namespace roundhouse.parser
 
         private void Whitespace()
         {
-            while (!IsAtEnd() && Peek() != '\n' && Char.IsWhiteSpace(Peek())) {
+            while (!IsAtEnd() && !PeekEndOfLine() && Char.IsWhiteSpace(Peek())) {
                 Advance();
             }
 
             AddToken(Token.Type.Whitespace);
         }
 
-        private void Quoted()
+        private void BacktickQuoted()
         {
-            while (!IsAtEnd() && !IsQuote(Peek())) {
+            while (!IsAtEnd() && !IsBacktickQuote(Peek())) {
                 
-                if (Peek() == '\n') {
+                if (MatchEndOfLine()) {
                     line++;
                 }
 
@@ -288,11 +282,11 @@ namespace roundhouse.parser
             AddToken(Token.Type.Quote);
         }
 
-        private void AnsiQuoted()
+        private void DoubleQuoted()
         {
-            while (!IsAtEnd() && !IsAnsiQuote(Peek())) {
+            while (!IsAtEnd() && !IsDoubleQuote(Peek())) {
                 
-                if (Peek() == '\n') {
+                if (MatchEndOfLine()) {
                     line++;
                 }
 
@@ -312,7 +306,7 @@ namespace roundhouse.parser
         {
             while (!IsAtEnd() && !IsSingleQuote(Peek())) {
                 
-                if (Peek() == '\n') {
+                if (MatchEndOfLine()) {
                     line++;
                 }
 
@@ -375,6 +369,20 @@ namespace roundhouse.parser
             return true;
         }
 
+        private bool MatchEndOfLine() {
+            if (script[current] == '\n') {
+                current++;
+                return true;
+            }
+            
+            if (script[current] == '\r' && script[current + 1] == '\n') {
+                current += 2;
+                return true;
+            }
+
+            return false;
+        }
+
         private char Peek() 
         {
             if (IsAtEnd()) {
@@ -391,6 +399,22 @@ namespace roundhouse.parser
             }
 
             return script[current + 1];
+        }
+
+        private bool PeekEndOfLine() {
+            if (current + 1 <= script.Length) {
+                if (script.Substring(current, 1) == "\n") {
+                    return true;
+                }
+            }
+
+            if (current + 2 <= script.Length) {
+                if (script.Substring(current, 2) == "\r\n") {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private bool PeekMultiCharacterDelimiter() 
@@ -418,12 +442,16 @@ namespace roundhouse.parser
             return current >= script.Length;
         }
 
-        private static bool IsQuote(char c) 
+        private bool IsAtEndOfLine() {
+            return (Peek() == '\r' && PeekPeek() == '\n') || Peek() == '\n';
+        }
+
+        private static bool IsBacktickQuote(char c) 
         {
             return c == '`';
         }
 
-        private static bool IsAnsiQuote(char c) 
+        private static bool IsDoubleQuote(char c) 
         {
             return c == '"';
         }

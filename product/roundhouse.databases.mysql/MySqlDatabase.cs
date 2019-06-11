@@ -14,6 +14,7 @@ namespace roundhouse.databases.mysql
     using System.Globalization;
     using System.Text;
     using roundhouse.parser;
+    using roundhouse.parser.rules;
 
     public class MySqlDatabase : AdoNetDatabase
     {
@@ -165,13 +166,9 @@ namespace roundhouse.databases.mysql
                     }
                 }
 
-                // fetch the server's ANSI quote mode
-                bool ansiQuotes = 
-                    sql_mode.IndexOf("ANSI_QUOTES", 0, sql_mode.Length, StringComparison.InvariantCulture) == 0 ? false : true;
-
                 // create a new parser to parse statements -- http://bugs.mysql.com/bug.php?id=46429
-                Parser parser = new Parser(ansiQuotes, sql_to_run);
-
+                Parser parser = new Parser(new MySqlRules(), sql_to_run);
+                
                 // parse out and process our SQL statements
                 List<ParsedStatement> statements = parser.Parse();
                 foreach (var statement in statements)
